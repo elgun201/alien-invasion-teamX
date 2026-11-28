@@ -1,6 +1,5 @@
 """Alien Invasion oyununun əsas işəsalma modulu."""
 
-import sys
 import pygame
 from pygame.sprite import Group
 
@@ -21,9 +20,13 @@ def run_game() -> None:
     # Səs sistemini hazırlayır (assets/ qovluğunda fayllar varsa yüklənir)
     pygame.mixer.init()
 
-    # Gəmi və aktiv güllə qrupunu yaradır
+    # Gəmi, aktiv güllə qrupu və yadplanetli donanma qrupunu yaradır
     ship = Ship(ai_settings, screen)
     bullets = Group()
+    aliens = Group()
+
+    # Başlanğıc yadplanetli donanmasını yaradır
+    gf.create_fleet(ai_settings, screen, ship, aliens)
 
     # 60 FPS sürətini saxlamaq üçün saat obyekti
     clock = pygame.time.Clock()
@@ -32,8 +35,9 @@ def run_game() -> None:
     while True:
         gf.check_events(ai_settings, screen, ship, bullets)
         ship.update()
-        gf.update_bullets(bullets)
-        gf.update_screen(ai_settings, screen, ship, bullets)
+        gf.update_bullets(bullets, aliens)
+        gf.update_aliens(ai_settings, aliens)
+        gf.update_screen(ai_settings, screen, ship, aliens, bullets)
         clock.tick(60)
 
 
