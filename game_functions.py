@@ -47,16 +47,13 @@ def update_bullets(bullets):
             bullets.remove(bullet)
 
 
-def update_screen(ai_settings, screen, ship, bullets):
-    """Update images on the screen."""
-
+def update_screen(ai_settings, screen, ship, aliens, bullets):
+    """Update images on the screen and flip to the new screen."""
     screen.fill(ai_settings.bg_color)
-
-    ship.blitme()
-
     for bullet in bullets.sprites():
         bullet.draw_bullet()
-
+    ship.blitme()
+    aliens.draw(screen)
     pygame.display.flip()
 
 from alien import Alien
