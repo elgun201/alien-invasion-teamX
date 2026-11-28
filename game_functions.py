@@ -13,7 +13,7 @@ def check_keydown_events(event, ai_settings, screen, ship, bullets):
         ship.moving_right = True
     elif event.key == pygame.K_LEFT:
         ship.moving_left = True
-    elif event.key == pygame.K_SPACE:
+    elif event.key == pygame.K_SPACE and ai_settings.game_active:
         fire_bullet(ai_settings, screen, ship, bullets)
     elif event.key == pygame.K_q:
         pygame.quit()
@@ -48,17 +48,23 @@ def fire_bullet(ai_settings, screen, ship, bullets):
         bullets.add(new_bullet)
 
 
-def update_bullets(bullets, aliens):
-    """Update position of bullets, remove off-screen bullets, and check collisions."""
+def update_bullets(ai_settings, bullets, aliens):
+    """Update bullet positions, remove collisions, and check win condition."""
     bullets.update()
 
-    # Remove bullets that have moved off the top of the screen
+    # Ekranın üstünden çıkan mermileri temizler
     for bullet in bullets.copy():
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
 
-    # Check for any bullets that have hit aliens
+    # Çarpışan mermi ve kareleri siler
     pygame.sprite.groupcollide(bullets, aliens, True, True)
+
+    # Ekranda hiç kare kalmadıysa oyunu kazanma ekranıyla bitirir
+    if len(aliens) == 0:
+        bullets.empty()
+        ai_settings.game_active = False
+        ai_settings.end_message = "YOU WIN"
 
 
 def get_number_aliens_x(ai_settings, alien_width):
@@ -73,43 +79,6 @@ def get_number_rows(ai_settings, ship_height, alien_height):
         ai_settings.screen_height - (3 * alien_height) - ship_height
     )
     return int(available_space_y / (2 * alien_height))
-
-
-def create_alien(ai_settings, screen, aliens, alien_number, row_number):
-    """Create an alien and place it in the row."""
-    alien = Alien(ai_settings, screen)
-    alien_width = alien.rect.width
-    alien.x = alien_width + 2 * alien_width * alien_number
-    alien.rect.x = alien.x
-    alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
-    aliens.add(alien)
-
-def update_screen(ai_settings, screen, ship, aliens, bullets):
-    """Update images on the screen and flip to the new screen."""
-    screen.fill(ai_settings.bg_color)
-    for bullet in bullets.sprites():
-        bullet.draw_bullet()
-    ship.blitme()
-    aliens.draw(screen)
-    pygame.display.flip()
-
-from alien import Alien
-
-
-def get_number_aliens_x(ai_settings, alien_width):
-    """Determine the number of aliens that fit in a row."""
-    available_space_x = ai_settings.screen_width - 2 * alien_width
-    number_aliens_x = int(available_space_x / (2 * alien_width))
-    return number_aliens_x
-
-
-def get_number_rows(ai_settings, ship_height, alien_height):
-    """Determine the number of rows of aliens that fit on the screen."""
-    available_space_y = (
-        ai_settings.screen_height - (3 * alien_height) - ship_height
-    )
-    number_rows = int(available_space_y / (2 * alien_height))
-    return number_rows
 
 
 def create_alien(ai_settings, screen, aliens, alien_number, row_number):
@@ -150,18 +119,52 @@ def change_fleet_direction(ai_settings, aliens):
     ai_settings.fleet_direction *= -1
 
 
-def update_aliens(ai_settings, aliens):
-    """Check if the fleet is at an edge, then update all alien positions."""
+def check_aliens_bottom(ai_settings, screen, aliens):
+    """Check if any aliens have reached the bottom of the screen."""
+    screen_rect = screen.get_rect()
+    for alien in aliens.sprites():
+        if alien.rect.bottom >= screen_rect.bottom:
+            ai_settings.game_active = False
+            ai_settings.end_message = "GAME OVER"
+            break
+
+
+def update_aliens(ai_settings, screen, aliens):
+    """Check edges/bottom, then update all alien positions."""
     check_fleet_edges(ai_settings, aliens)
     aliens.update()
+    check_aliens_bottom(ai_settings, screen, aliens)
 
 
-def update_bullets(bullets, aliens):
-    """Update bullet positions and remove collisions with aliens."""
-    bullets.update()
-    for bullet in bullets.copy():
-        if bullet.rect.bottom <= 0:
-            bullets.remove(bullet)
+def draw_end_message(ai_settings, screen):
+    """Draw YOU WIN or GAME OVER text at the center of the screen."""
+    if not ai_settings.end_message:
+        return
 
-    # Remove any bullets and aliens that have collided
-    pygame.sprite.groupcollide(bullets, aliens, True, True)
+    font = pygame.font.SysFont(None, 96)
+    color = (
+        ai_settings.win_color
+        if ai_settings.end_message == "YOU WIN"
+        else ai_settings.lose_color
+    )
+    text_surface = font.render(ai_settings.end_message, True, color)
+    text_rect = text_surface.get_rect()
+    text_rect.center = screen.get_rect().center
+    screen.blit(text_surface, text_rect)
+
+
+def update_screen(ai_settings, screen, ship, aliens, bullets):
+    """Update images on the screen and flip to the new screen."""
+    screen.fill(ai_settings.bg_color)
+
+    if ai_settings.game_active:
+        for bullet in bullets.sprites():
+            bullet.draw_bullet()
+        ship.blitme()
+        aliens.draw(screen)
+    else:
+        draw_end_message(ai_settings, screen)
+
+    pygame.display.flip()
+```[cite: 1, 2, 4, 7, 9]
+
